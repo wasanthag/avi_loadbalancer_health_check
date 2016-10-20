@@ -26,5 +26,5 @@ optional arguments:
 ```
 
 2) cluster_health_check.py
-This is very similar to the cluster health check functionality provided by the 1). It can be used as a Nagios plugin as well
+This is similar to the cluster health check functionality provided by the 1) but in summary format. It can be used as a Nagios plugin.
 
