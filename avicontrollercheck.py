@@ -2,6 +2,8 @@
 # Filename: avicontrollercheck.py
 __author__ = 'shu2003'
 
+from opcode import hasconst
+from re import I
 import requests
 import json
 import argparse
@@ -12,9 +14,8 @@ import argparse
 def _create_session(avi_vip, avi_user, avi_passwd):
 
 
-        print "+Creating a session to AVI Controller %s" %avi_vip
-        print "\n"
-        avi_uri = 'https://%s' % (avi_vip) + '/login'
+        print(f"+Creating a session to AVI Controller {avi_vip}\n")
+        avi_uri = f"https://{avi_vip}/login"
         try:
                 requests.packages.urllib3.disable_warnings()
                 login = requests.post(avi_uri, verify=False,
@@ -22,8 +23,8 @@ def _create_session(avi_vip, avi_user, avi_passwd):
                 return login
 
         except Exception as api_excep:
-            print "!!!!Exception Occurred while trying to create a session to AVI controlelr!!!"
-            print api_excep
+            print("!!!!Exception Occurred while trying to create a session to AVI controlelr!!!")
+            print(api_excep)
 
 def _check_configs(avic, avi_vip):
 
@@ -31,81 +32,93 @@ def _check_configs(avic, avi_vip):
         results2_dic = {}
 
         try:
-                avi_uri0 = 'https://%s' % (avi_vip) + '/api/cluster/version'
-                avi_uri = 'https://%s' % (avi_vip) + '/api/serviceenginegroup'
-                avi_uri2 = 'https://%s' % (avi_vip) + '/api/systemconfiguration'
-                avi_uri3 = 'https://%s' % (avi_vip) + '/api/cloud'
+                avi_uri0 = f"https://{avi_vip}/api/cluster/version"
+                avi_uri = f"https://{avi_vip}/api/serviceenginegroup"
+                avi_uri2 = f"https://{avi_vip}/api/systemconfiguration"
+                avi_uri3 = f"https://{avi_vip}/api/cloud"
 
 
-                print "+++++++++Checking AVI cluster config parameters++++++++"
+                print("+++++++++Checking AVI cluster config parameters++++++++")
 
-                print "+Retrieving configs via API call %s" %avi_uri0
+                print(f"+Retrieving configs via API call {avi_uri0}")
                 resp0 = requests.get(avi_uri0, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                 resp0_text = json.loads(resp0.text)
-                print "Cluster Software Version is       : %s" %resp0_text['Version']
-                print "Cluster Software build is         : %s" %resp0_text['build']
+                print(f"Cluster Software Version is       : {resp0_text['Version']}")
+                print(f"Cluster Software build is         : {resp0_text['build']}")
 
                 resp = requests.get(avi_uri, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                 resp_text = json.loads(resp.text)['results']
                 results_dic = resp_text
-                print "+Retrieving configs via API call %s" %avi_uri
-                print "Cluster Auto Rebalance is set to  : %s" %results_dic[0]['auto_rebalance']
-                print "Cluster HA Mode is set to         : %s" %results_dic[0]['ha_mode']
-                print "MAX SE count is set to            : %s" %results_dic[0]['max_se']
-                print "MAX Virtual services per SE       : %s" %results_dic[0]['max_vs_per_se']
-                print "SE Redundancy is set to           : %s" %results_dic[0]['vs_host_redundancy']
-                print "Memory per SE is set to           : %s" %results_dic[0]['memory_per_se']
+                print(f"+Retrieving configs via API call {avi_uri}")
+                print(f"Cluster Auto Rebalance is set to  : {results_dic[0]['auto_rebalance']}")
+                print(f"Cluster HA Mode is set to         : {results_dic[0]['ha_mode']}")
+                print(f"MAX SE count is set to            : {results_dic[0]['max_se']}")
+                print(f"MAX Virtual services per SE       : {results_dic[0]['max_vs_per_se']}")
+                print(f"SE Redundancy is set to           : {results_dic[0]['vs_host_redundancy']}")
+                print(f"Memory per SE is set to           : {results_dic[0]['memory_per_se']}")
 
 
-                print "+Retrieving configs via API call %s" %avi_uri2
+                print(f"+Retrieving configs via API call {avi_uri2}")
                 resp2 = requests.get(avi_uri2, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                 resp2_text = json.loads(resp2.text)['global_tenant_config']
-                print "SE in Provider Context is set to   : %s" %resp2_text['se_in_provider_context']
-                print "Tenant VRF configuration is set to : %s" %resp2_text['tenant_vrf']
+                print(f"SE in Provider Context is set to   : {resp2_text['se_in_provider_context']}")
+                print(f"Tenant VRF configuration is set to : {resp2_text['tenant_vrf']}")
 
-                print "+Retrieving configs via API call %s" %avi_uri3
+                print(f"+Retrieving configs via API call {avi_uri3}")
                 resp3 = requests.get(avi_uri3, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                 resp3_text = json.loads(resp3.text)['results']
                 results_dic3 = resp3_text
-                results_dic4 = results_dic3[0]['openstack_configuration']
-                print "Import Keystone tenants set to   : %s" %results_dic4['import_keystone_tenants']
-
+                for cloud in resp3_text:
+                    print(f"+++++++++V-Type {cloud['vtype']}+++++++++++++++++")
+                    print(f"+Name                          : {cloud['name']}")
+                    print(f"+DHCP enabled                  : {cloud['dhcp_enabled']}")
+                    print(f"+MTU                           : {cloud['mtu']}")
+                    print(f"+Prefer static_routes          : {cloud['prefer_static_routes']}")
+                    print(f"+Enable vip static_routes      : {cloud['enable_vip_static_routes']}")
+                    if hasattr(cloud,'obj_name_prefix' ):
+                        print(f"+Object name prefix            : {cloud['obj_name_prefix']}")
+                    print(f"+License type                  : {cloud['license_type']}")
+                    print(f"+License tier                  : {cloud['license_tier']}")
+                    print(f"+State based dns registration  : {cloud['state_based_dns_registration']}")
+                    print(f"+ip6 autocfg enabled           : {cloud['ip6_autocfg_enabled']}")
+                    print(f"+Autoscale polling interval    : {cloud['autoscale_polling_interval']}")
+                    if hasattr(cloud,'openstack_configuration' ):
+                        print("Import Keystone tenants set to   : {cloud['openstack_configuration']['import_keystone_tenants']}")
                 avic.close()
 
 
         except Exception as api_excep:
-            print "!!!!Exception Occurred while getting configs from AVI API!!!"
-            print api_excep
+            print("!!!!Exception Occurred while getting configs from AVI API!!!")
+            print(api_excep)
 
 def _check_cluster_health(avic, avi_vip):
         results_dic = {}
 
         try:
-                avi_uri = 'https://%s' % (avi_vip) + '/api/cluster/runtime'
-
+                avi_uri = f"https://{avi_vip}/api/cluster/runtime"
 
                 resp = requests.get(avi_uri, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                 resp_text = json.loads(resp.text)['cluster_state']
                 resp2_text = json.loads(resp.text)['node_states']
+                print("+++++++++Checking AVI cluster Status++++++++++")
+                print(f"+Retrieving cluster health via API call {avi_uri}")
+                print(f"Current Cluster Status  : {resp_text['state']}")
+                print(f"Cluster is up since     : {resp_text['up_since']}")
 
-                print "+++++++++Checking AVI cluster Status++++++++++"
-                print "+Retrieving cluster health via API call %s" %avi_uri
-                print "Current Cluster Status  : %s" %resp_text['state']
-                print "Cluster is up since     : %s" %resp_text['up_since']
-
-                print "+++++++++Checking cluster Member Status++++++++++"
-                for i in range(0,3):
-                   print resp2_text[i]['name'] + " :   " + resp2_text[i]['role'] + "  "  + resp2_text[i]['state'] + "  Up Since  " "    " + resp2_text[i]['up_since']
+                print("+++++++++Checking cluster Member Status++++++++++")
+                
+                for node in resp2_text:
+                   print(f"{node['name']} :   {node['role']}  {node['state']}  Up Since      {node['up_since']}")
 
 
-                print "\n"
+                print()
 
                 avic.close()
 
 
         except Exception as api_excep:
-            print "!!!!Exception Occurred while getting configs from serviceenginegroup!!!"
-            print api_excep
+            print("!!!!Exception Occurred while getting configs from serviceenginegroup!!!")
+            print(api_excep)
 
 def _check_tenant_configs(avic, avi_vip):
 
@@ -114,148 +127,146 @@ def _check_tenant_configs(avic, avi_vip):
         se_list = []
 
         try:
-                avi_uri0 = 'https://%s' % (avi_vip) + '/api/tenant'
+                avi_uri0 = f"https://{avi_vip}/api/tenant"
 
                 print
-                print "+++++++++Checking AVI Tenant configs++++++++"
+                print("+++++++++Checking AVI Tenant configs++++++++")
                 print
 
-                print "+Retrieving configs via API call %s" %avi_uri0
+                print(f"+Retrieving configs via API call {avi_uri0}")
 
                 resp = requests.get(avi_uri0, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                 resp_text = json.loads(resp.text)['results']
                 results_list = resp_text
                 for i in results_list:
                     if 'config_settings' in i:
-                        print "+++++++Configs for tenant %s with UUID: %s +++++++" %(i['name'],i['uuid'])
-                        virt_svc_url = 'https://%s' % (avi_vip) + '/api/tenant/' + i['uuid'] + '/virtualservice'
+                        print(f"+++++++Configs for tenant {i['name']} with UUID: {i['uuid']} +++++++")
+                        virt_svc_url = f"https://{avi_vip}/api/tenant/{i['uuid']}/virtualservice"
                         resp2 = requests.get(virt_svc_url, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                         resp2_text = json.loads(resp2.text)['results']
 
                         for j in resp2_text:
-                            print "+++++++++Virtual services configs++++++++"
-                            print "UUID                  : %s" % j['uuid']
-                            print "Name                  : %s" % j['name']
-                            print "enabled               : %s" % j['enabled']
-                            print "port_uuid             : %s" % j['port_uuid']
-                            print "weight                : %s" % j['weight']
-                            print "subnet_uuid           : %s" % j['subnet_uuid']
-                            #print "delay_fairness               : %s" % j['delay_fairness']
-                            #print "avi_allocated_vip            : %s" % j['avi_allocated_vip']
-                            #print "avi_allocated_fip            : %s" % j['avi_allocated_fip']
-                            #print "max_cps_per_client           : %s" % j['max_cps_per_client']
-                            #print "redis_db                     : %s" % j['redis_db']
-                            #print "type                         : %s" % j['type']
-                            #print "requested_resource           : %s" % j['requested_resource']
+                            print("+++++++++Virtual services configs++++++++")
+                            print(f"UUID                  : {j['uuid']}")
+                            print(f"Name                  : {j['name']}")
+                            print(f"enabled               : {j['enabled']}")
+                            print(f"port_uuid             : {j['port_uuid']}")
+                            print(f"weight                : {j['weight']}")
+                            print(f"subnet_uuid           : {j['subnet_uuid']}")
+                            #print(f"delay_fairness               : {j['delay_fairness']}")
+                            #print(f"avi_allocated_vip            : {j['avi_allocated_vip']}")
+                            #print(f"avi_allocated_fip            : {j['avi_allocated_fip']}")
+                            #print(f"max_cps_per_client           : {j['max_cps_per_client']}")
+                            #print(f"redis_db                     : {j['redis_db']}")
+                            #print(f"type                         : {j['type']}")
+                            #print(f"requested_resource           : {j['requested_resource']}")
                             if 'description' in j:
-                                print "description           : %s" % j['description']
-                            print "subnet                 : %s" % j['subnet']
-                            #print "redis_port                   : %s" % j['redis_port']
-                            #print "auto_allocate_floating_ip    : %s" % j['auto_allocate_floating_ip']
-                            print "address                : %s" % j['address']
-                            print "services               : %s" % j['services']
-                            #print "ip_address                   : %s" % j['ip_address']
-                            #print "limit_doser                  : %s" % j['limit_doser']
-                            #print "enable_autogw                : %s" % j['enable_autogw']
-                            #print "auto_allocate_ip             : %s" % j['auto_allocate_ip']
-                            #print "analytics_policy             : %s" % j['analytics_policy']
-                            #print "redis_ip                     : %s" % j['redis_ip']
+                                print(f"description           : {j['description']}")
+                            print(f"subnet                 : {j['subnet']}")
+                            #print(f"redis_port                   : {j['redis_port']}")
+                            #print(f"auto_allocate_floating_ip    : {j['auto_allocate_floating_ip']}")
+                            print(f"address                : {j['address']}")
+                            print(f"services               : {j['services']}")
+                            #print(f"ip_address                   : {j['ip_address']}")
+                            #print(f"limit_doser                  : {j['limit_doser']}")
+                            #print(f"enable_autogw                : {j['enable_autogw']}")
+                            #print(f"auto_allocate_ip             : {j['auto_allocate_ip']}")
+                            #print(f"analytics_policy             : {j['analytics_policy']}")
+                            #print(f"redis_ip                     : {j['redis_ip']}")
 
-                            # print "se_list  : %s" % j['se_list']
+                            #print(f"se_list  : {j['se_list']}")
                             if 'se_list' in j:
                                 se_list = j['se_list']
                                 for x in se_list:
-                                    print "+++++++++SE Configs+++++++++"
+                                    print("+++++++++SE Configs+++++++++")
                                     se_url = x['se_ref']
                                     se_resp = requests.get(se_url, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                                     se_resp_text = json.loads(se_resp.text)
-                                    # print "Additional SE  configs    :"
-                                    print "name                 : %s" % se_resp_text['name']
-                                    print "mgmt_vnic            : %s" % se_resp_text['mgmt_vnic']['vnic_networks']
-                                    # print "flavor                    : %s" % se_resp_text['flavor']
-                                    # print "resources                 : %s" % se_resp_text['resources']
-                                    # print "hb_status                 : %s" % se_resp_text['hb_status']
-                                    print "state_name           : %s" % se_resp_text['state_name']
-                                    print "oper_status          : %s" % se_resp_text['oper_status']['state']
-                                    print "oper_status_reason   : %s" % se_resp_text['oper_status']['reason']
-                                    # print "vinfra_discovered         : %s" % se_resp_text['vinfra_discovered']
-                                    print "power_state          : %s" % se_resp_text['power_state']
-                                    print "creation_in_progress : %s" % se_resp_text['creation_in_progress']
+                                    #print "Additional SE  configs    :"
+                                    print(f"name                 : {se_resp_text['name']}")
+                                    print(f"mgmt_vnic            : {se_resp_text['mgmt_vnic']['vnic_networks']}")
+                                    #print(f"flavor                    : {se_resp_text['flavor']}")
+                                    #print(f"resources                 : {se_resp_text['resources']}")
+                                    #print(f"hb_status                 : {se_resp_text['hb_status']}")
+                                    print(f"state_name           : {se_resp_text['state_name']}")
+                                    print(f"oper_status          : {se_resp_text['oper_status']['state']}")
+                                    print(f"oper_status_reason   : {se_resp_text['oper_status']['reason']}")
+                                    #print(f"vinfra_discovered         : {se_resp_text['vinfra_discovered']}")
+                                    print(f"power_state          : {se_resp_text['power_state']}")
+                                    print(f"creation_in_progress : {se_resp_text['creation_in_progress']}")
 
-                                    #print "vnic  configs            :"
-                                    #print " vnic1                   : %s" % x['vnic'][0]
-                                    #print " vnic2                   : %s" % x['vnic'][1]
-                                    #print " vnic3                   : %s" % x['vnic'][2]
-                                    print "vip_intf_mac         : %s" %x['vip_intf_mac']
-                                    #print "delete_in_progress       : %s" %x['delete_in_progress']
-                                    print "is_primary           : %s" %x['is_primary']
-                                    #print "sec_idx                  : %s" %x['sec_idx']
-                                    print "is_standby           : %s" %x['is_standby']
-                                    #print "vip_subnet_mask          : %s" %x['vip_subnet_mask']
-                                    #print "se_ref                   : %s" %x['se_ref']
-                                    #print "memory                   : %s" %x['memory']
-                                    #print "pending_download         : %s" %x['pending_download']
-                                    #print "is_connected             : %s" %x['is_connected']
+                                    #print("vnic  configs            :")
+                                    #print(f" vnic1                   : {x['vnic'][0]}")
+                                    #print(f" vnic2                   : {x['vnic'][1]}")
+                                    #print(f" vnic3                   : {x['vnic'][2]}")
+                                    print(f"vip_intf_mac         : {['vip_intf_mac']}")
+                                    #print(f"delete_in_progress       : {['delete_in_progress']}")
+                                    print(f"is_primary           : {['is_primary']}")
+                                    #print(f"sec_idx                  : {['sec_idx']}")
+                                    print(f"is_standby           : {['is_standby']}")
+                                    #print(f"vip_subnet_mask          : {['vip_subnet_mask']}")
+                                    #print(f"se_ref                   : {['se_ref']}")
+                                    #print(f"memory                   : {['memory']}")
+                                    #print(f"pending_download         : {['pending_download']}")
+                                    #print(f"is_connected             : {['is_connected']}")
                                 del se_list
 
 
+                            print()
 
-                            print "\n"
 
-
-                        pool_url = 'https://%s' % (avi_vip) + '/api/tenant/' + i['uuid'] + '/pool'
+                        pool_url = f"https://{avi_vip}/api/tenant/{i['uuid']}/pool"
                         pool_resp = requests.get(pool_url, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                         pool_resp_text = json.loads(pool_resp.text)['results']
-                        print "+++++++++Pool configs++++++++"
+                        print("+++++++++Pool configs++++++++")
                         for y in pool_resp_text:
-                            print "name                   : %s" % y['name']
+                            print(f"name                   : {y['name']}")
                             if 'description' in y:
-                                print "description                  : %s" % y['description']
-                            print "UUID                   : %s" % y['uuid']
-                            print "enabled                : %s" % y['enabled']
-                            print "lb_algorithm           : %s" % y['lb_algorithm']
-                            print "server_count           : %s" % y['server_count']
+                                print(f"description                  : {y['description']}")
+                            print(f"UUID                   : {y['uuid']}")
+                            print(f"enabled                : {y['enabled']}")
+                            print(f"lb_algorithm           : {y['lb_algorithm']}")
+                            print(f"server_count           : {y['server_count']}")
                             if 'servers' in y:
-                                #print "servers                      : %s" % y['servers']
+                                #print(f "servers                      : {y['servers']}")
                                 for a in range(0,y['server_count']):
-                                    print "server %i configs" %(a + 1)
-                                    print "name:        : %s" %y['servers'][a]['hostname']
-                                    print "ext_uuid:    : %s" % y['servers'][a]['external_uuid']
-                                    print "ip:          : %s" % y['servers'][a]['ip']
-                                    print "enabled:     : %s" % y['servers'][a]['enabled']
-                                    print "port:        : %s" % y['servers'][a]['port']
+                                    print(f"server {a + 1} configs")
+                                    print(f"name:        : {y['servers'][a]['hostname']}")
+                                    print(f"ext_uuid:    : {y['servers'][a]['external_uuid']}")
+                                    print(f"ip:          : {y['servers'][a]['ip']}")
+                                    print(f"enabled:     : {y['servers'][a]['enabled']}")
+                                    print(f"port:        : {y['servers'][a]['port']}")
                                     a = a +1
 
                             if 'health_monitor_refs' in y:
-                                #print "health_monitor_refs          : %s" % y['health_monitor_refs']
+                                #print(f"health_monitor_refs          : {y['health_monitor_refs']}")
                                 hm_list = y['health_monitor_refs']
 
                                 hm_split = hm_list[0].split('/api')
 
-                                hm_url = 'https://%s' % (avi_vip) + '/api/tenant/' + i['uuid'] + hm_split[1]
+                                hm_url = f"https://{avi_vip}/api/tenant/{i['uuid']}{hm_split[1]}"
                                 hm_resp = requests.get(hm_url, verify=False, cookies=dict(sessionid= avic.cookies['sessionid']))
                                 hm_resp_text = json.loads(hm_resp.text)
 
-                                print "\n"
-                                print "+++++++++Health Monitor configs++++++++"
-                                print "name                         : %s" % hm_resp_text['name']
-                                print "UUID                         : %s" % hm_resp_text['uuid']
-                                print "Type                         : %s" % hm_resp_text['type']
+                                print()
+                                print("+++++++++Health Monitor configs++++++++")
+                                print(f"name                         : {hm_resp_text['name']}")
+                                print(f"UUID                         : {hm_resp_text['uuid']}")
+                                print(f"Type                         : {hm_resp_text['type']}")
 
-
-                        print "\n"
+                        print()
 
 
 
                 #for pool
-                #virt_svc_url = 'https://%s' % (avi_vip) + '/api/tenant/' + i['uuid'] + '/pool'
+                #virt_svc_url = f"https://{avi_vip}/api/tenant/{i['uuid']}/pool"
 
                 avic.close()
 
 
         except Exception as api_excep:
-            print "!!!!Exception Occurred while getting configs from AVI API!!!"
-            print api_excep
+            print("!!!!Exception Occurred while getting configs from AVI API!!!")
+            print(api_excep)
 
 
 if __name__=='__main__':
@@ -277,19 +288,19 @@ if __name__=='__main__':
 
 
     if args.option == 'health':
-        print "++++++ Checking AVI cluster Health +++++++\n"
+        print("++++++ Checking AVI cluster Health +++++++\n")
         login_session = _create_session(avi_controller_vip, avi_user, avi_controller_passwd)
         _check_cluster_health(login_session, avi_controller_vip)
         login_session.close()
 
     elif args.option == 'cluster_configs':
-        print "++++++ Checking AVI cluster config parameters ++++++\n"
+        print("++++++ Checking AVI cluster config parameters ++++++\n")
         login_session = _create_session(avi_controller_vip, avi_user, avi_controller_passwd)
         _check_configs(login_session, avi_controller_vip)
         login_session.close()
 
     elif args.option == 'tenant_configs':
-        print "++++++ Checking AVI cluster config parameters ++++++\n"
+        print("++++++ Checking AVI cluster config parameters ++++++\n")
         login_session = _create_session(avi_controller_vip, avi_user, avi_controller_passwd)
         _check_tenant_configs(login_session, avi_controller_vip)
         login_session.close()
